@@ -1,11 +1,11 @@
-
+//===================================================
+// Class to store 2D pattern data!
 //===================================================
 class Pattern {
   float[][] values;
   float result[];
   float minSimilarity = 0;
   int dim1, dim2;
-  int right=0,wrong=0;
   //------------------------------------------
   Pattern(float[][] ar, float f[]) {
     setValues(ar);

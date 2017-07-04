@@ -26,9 +26,9 @@ public void setup() {
   //buildData(2);
   frameRate(10000);
   PM = new PatternMatcher2D(5, 2, 1); // (pattern length, target offset)
-  PM.minScore = 60;
-  PM.cleanup = true;
-  PM.learn(inputdata);
+  PM.minScore = 50; // in percent
+  PM.cleanup = false;  // remove duplicate entries
+  PM.learn(inputdata); // find patterns in input data
 }
 //===================================================
 public void draw() {
@@ -37,7 +37,7 @@ public void draw() {
   frame.setTitle((int)frameRate+" cps "+currentIndex);
 
   Pattern[] p = PM.testPattern(testData, currentIndex);
-  frameRate(p.length > 5 ? 2 : 100000);
+  frameRate(p.length > 5 ? 2 : 100000); // slow down if multiple patterns are found!
   if (p.length==0) return; // to speed tings up...!
 
   // display data and results...:
@@ -116,14 +116,15 @@ public float max(float[][]ar) {
   return ret;
 }
 //===================================================
-
+//===================================================
+// Pattern Matcher Class for 2D patterns
 //===================================================
 class PatternMatcher2D {
   int patternLength1, patternLength2;
   int futureOffset;
   float minScore = 10;
   Pattern[] pattern;
-  boolean cleanup = false;
+  boolean cleanup = false; // removes duplicate patterns
   //------------------------------------------
   PatternMatcher2D(int pl1, int pl2, int fo) {
     pattern = new Pattern[0];
@@ -132,21 +133,21 @@ class PatternMatcher2D {
     futureOffset = fo;
   }
   //------------------------------------------
-  // should i filter all the duplicate patterns? -> group all similar pattern into one?
-  // that would speed up things enormously, but might worsen the results? -> test!
-  public void learn(float[][] ar) {
+  // go through input data and add patterns to pattern-AR
+public void learn(float[][] ar) {
     float[][] pat = new float[patternLength1][patternLength2];
     float[] res = new float[patternLength2];
     for (int i=patternLength1; i<ar.length-futureOffset; i++) {
       pattern = (Pattern[]) expand(pattern, pattern.length+1);
       pattern[pattern.length-1] = new Pattern();
-      pattern[pattern.length-1].setValues(getPattern(ar,i));
-      pattern[pattern.length-1].setResult(getResult(ar,i));
+      pattern[pattern.length-1].setValues(getPattern(ar, i));
+      pattern[pattern.length-1].setResult(getResult(ar, i));
     }
-    if(cleanup)cleanup();
+    if (cleanup)cleanup();
     println(pattern.length+" pattern learned");
   }
   //------------------------------------------
+  // remove duplicate entries from pattern-AR
   public void cleanup() {
     // i should somehow adjust/keep/take into account the target of the other patterns, no? ... -,-
     int index = 0, i=0;
@@ -156,7 +157,7 @@ class PatternMatcher2D {
     Pattern testPattern;
     float[][] results = new float[0][0];
     float currentResult=0;
-    int right,wrong;
+    int right, wrong;
     boolean remove;
     println(pattern.length);
     while (index<pattern.length-1) {
@@ -165,7 +166,8 @@ class PatternMatcher2D {
       testPattern = pattern[index];
       results = new float[0][0];
       currentResult=0;
-      right = 0;wrong = 0;
+      right = 0;
+      wrong = 0;
       while (i<pattern.length) {
         currentScore = testPattern.getScore(pattern[i]);
         if (currentScore>minScore) {
@@ -184,25 +186,24 @@ class PatternMatcher2D {
       // would be good: first: test if they go to the same direction most of the time
       // if not: remove the pattern all together! (only keep high probability pattern!)
       remove = false;
-      if(results.length>0){
-        for(int k=0;k<patternLength2;k++){
-          for(int j=0;j<results.length;j++){
-            if(results[j][k]>0) right++;
+      if (results.length>0) {
+        for (int k=0; k<patternLength2; k++) {
+          for (int j=0; j<results.length; j++) {
+            if (results[j][k]>0) right++;
             else                wrong++;
             currentResult+=results[j][k];
           }
           // only act if more than half of the instances point in the same direction!
-          if(right/2>wrong){
+          if (right/2>wrong) {
             pattern[index].result[k]+=currentResult;
             pattern[index].result[k] /= (results.length+1);
-          }
-          else{
+          } else {
             remove=true;
           }
         }
       }
       // is this actually correct!?
-      if(remove && index<pattern.length){
+      if (remove && index<pattern.length) {
         //arrayCopy(src, srcPosition, dst, dstPosition, length)
         arrayCopy(pattern, index+1, pattern, index, pattern.length-(index+1));
         pattern = (Pattern[])shorten(pattern);
@@ -213,6 +214,11 @@ class PatternMatcher2D {
       index++;
     }
     println(removed+" pattern removed");
+  }
+  //------------------------------------------
+  public void removeEntryFromPatternAr(Pattern[] ar, int index) {
+    arrayCopy(ar, index+1, ar, index, ar.length-(index+1));
+    ar = (Pattern[])shorten(ar);
   }
   //------------------------------------------
   public float[][] getPattern(float[][] ar, int index) {
@@ -229,7 +235,7 @@ class PatternMatcher2D {
   public float[] getResult(float[][] ar, int index) {
     float[] ret = new float[patternLength2];
     for (int j=0; j<patternLength2; j++)
-    //  ret[j] = percentChange(ar[index][j], ar[index+futureOffset][j]);
+      //  ret[j] = percentChange(ar[index][j], ar[index+futureOffset][j]);
       ret[j] = ar[index+futureOffset][j]-ar[index][j];
     return ret;
   }
@@ -262,17 +268,20 @@ class PatternMatcher2D {
   public float getTarget(Pattern[] p) {
     float ret = 0;
     for (int i=0; i<p.length; i++)
-    for (int j=0; j<p[i].dim2; j++)
-    ret+= p[i].result[j];
+      for (int j=0; j<p[i].dim2; j++)
+        ret+= p[i].result[j];
     return ret/p.length;
   }
 }
 float[][] inputdata, testData;
 //===================================================
+// build ar of randomized data
 public void buildData(int dim2) {
+  int numTrainingSamples = 2000;
+  int numEvalSamples = 1000;
   print("data ...");
-  inputdata = new float[2000][dim2];
-  testData = new float[1000][dim2];
+  inputdata = new float[numTrainingSamples][dim2];
+  testData = new float[numEvalSamples][dim2];
 
   for (int i=1; i<inputdata.length; i++)
   for (int j=0; j<inputdata[i].length; j++)
@@ -282,7 +291,7 @@ public void buildData(int dim2) {
   for (int j=0; j<testData[i].length; j++)
   testData[i][j] = testData[i-1][j] + random(-1, 1);
 
-  println(" loaded: ");
+  println(" data generated: ");
   println(" training samples: "+inputdata.length);
   println(" test samples:     "+testData.length);
   displayData(1, 0, testData.length);
@@ -304,17 +313,13 @@ public void displayData(int index, int back, int forward) {
         map(i-1, -back, forward, 0, width),
         map(testData[index+i-1][j],scaleMin, scaleMax, height, 0)
         );
-        /*  ellipse(
-        map(i, -back, forward, 0, width),
-        map(testData[index+i][j], min(testData), max(testData), height, 0),
-        2, 2);
-        */
       }
     }
   }
 
 
   //------------------------------------------
+  // load data from file
   public void importData() {
     int numTrainingSamples = 25000;
     int numEvalSamples = 5500;
@@ -362,7 +367,8 @@ public void displayData(int index, int back, int forward) {
     testData = f;
     displayData(1, 0, testData.length);
   }
-
+//===================================================
+// Class to store 2D pattern data!
 //===================================================
 class Pattern {
   float[][] values;

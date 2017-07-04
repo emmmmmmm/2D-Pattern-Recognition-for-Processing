@@ -1,11 +1,12 @@
-
+//===================================================
+// Pattern Matcher Class for 2D patterns
 //===================================================
 class PatternMatcher2D {
   int patternLength1, patternLength2;
   int futureOffset;
   float minScore = 10;
   Pattern[] pattern;
-  boolean cleanup = false;
+  boolean cleanup = false; // removes duplicate patterns
   //------------------------------------------
   PatternMatcher2D(int pl1, int pl2, int fo) {
     pattern = new Pattern[0];
@@ -14,9 +15,8 @@ class PatternMatcher2D {
     futureOffset = fo;
   }
   //------------------------------------------
-  // should i filter all the duplicate patterns? -> group all similar pattern into one?
-  // that would speed up things enormously, but might worsen the results? -> test!
-  void learn(float[][] ar) {
+  // go through input data and add patterns to pattern-AR
+void learn(float[][] ar) {
     float[][] pat = new float[patternLength1][patternLength2];
     float[] res = new float[patternLength2];
     for (int i=patternLength1; i<ar.length-futureOffset; i++) {
@@ -29,6 +29,7 @@ class PatternMatcher2D {
     println(pattern.length+" pattern learned");
   }
   //------------------------------------------
+  // remove duplicate entries from pattern-AR
   void cleanup() {
     // i should somehow adjust/keep/take into account the target of the other patterns, no? ... -,-
     int index = 0, i=0;
@@ -97,7 +98,7 @@ class PatternMatcher2D {
     println(removed+" pattern removed");
   }
   //------------------------------------------
-  void removeEntryFromPatternAr(Patter[] ar, int index) {
+  void removeEntryFromPatternAr(Pattern[] ar, int index) {
     arrayCopy(ar, index+1, ar, index, ar.length-(index+1));
     ar = (Pattern[])shorten(ar);
   }
@@ -154,4 +155,3 @@ class PatternMatcher2D {
     return ret/p.length;
   }
 }
-

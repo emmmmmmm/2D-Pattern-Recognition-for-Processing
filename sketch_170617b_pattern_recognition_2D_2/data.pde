@@ -1,9 +1,12 @@
 float[][] inputdata, testData;
 //===================================================
+// build ar of randomized data
 void buildData(int dim2) {
+  int numTrainingSamples = 2000;
+  int numEvalSamples = 1000;
   print("data ...");
-  inputdata = new float[2000][dim2];
-  testData = new float[1000][dim2];
+  inputdata = new float[numTrainingSamples][dim2];
+  testData = new float[numEvalSamples][dim2];
 
   for (int i=1; i<inputdata.length; i++)
   for (int j=0; j<inputdata[i].length; j++)
@@ -13,7 +16,7 @@ void buildData(int dim2) {
   for (int j=0; j<testData[i].length; j++)
   testData[i][j] = testData[i-1][j] + random(-1, 1);
 
-  println(" loaded: ");
+  println(" data generated: ");
   println(" training samples: "+inputdata.length);
   println(" test samples:     "+testData.length);
   displayData(1, 0, testData.length);
@@ -35,17 +38,13 @@ void displayData(int index, int back, int forward) {
         map(i-1, -back, forward, 0, width),
         map(testData[index+i-1][j],scaleMin, scaleMax, height, 0)
         );
-        /*  ellipse(
-        map(i, -back, forward, 0, width),
-        map(testData[index+i][j], min(testData), max(testData), height, 0),
-        2, 2);
-        */
       }
     }
   }
 
 
   //------------------------------------------
+  // load data from file
   void importData() {
     int numTrainingSamples = 25000;
     int numEvalSamples = 5500;

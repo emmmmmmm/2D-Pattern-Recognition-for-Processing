@@ -10,9 +10,9 @@ void setup() {
   //buildData(2);
   frameRate(10000);
   PM = new PatternMatcher2D(5, 2, 1); // (pattern length, target offset)
-  PM.minScore = 60;
-  PM.cleanup = true;
-  PM.learn(inputdata);
+  PM.minScore = 50; // in percent
+  PM.cleanup = false;  // remove duplicate entries
+  PM.learn(inputdata); // find patterns in input data
 }
 //===================================================
 void draw() {
@@ -21,7 +21,7 @@ void draw() {
   frame.setTitle((int)frameRate+" cps "+currentIndex);
 
   Pattern[] p = PM.testPattern(testData, currentIndex);
-  frameRate(p.length > 5 ? 2 : 100000);
+  frameRate(p.length > 5 ? 2 : 100000); // slow down if multiple patterns are found!
   if (p.length==0) return; // to speed tings up...!
 
   // display data and results...:
